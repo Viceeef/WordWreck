@@ -1,0 +1,70 @@
+.app { -fx-background-color: linear-gradient(to bottom right, #0b2131, #091a28); -fx-font-family: "Segoe UI", sans-serif; -fx-font-size: 12px; }
+.label { -fx-text-fill: #eaf3f4; }
+.title-bar { -fx-background-color: #071724; }
+.title-drag { -fx-padding: 0 18; -fx-cursor: move; }
+.window-button { -fx-background-color: transparent; -fx-text-fill: #bed2dc; -fx-font-size: 10px; -fx-padding: 6 15; -fx-background-radius: 0; }
+.window-button:hover { -fx-background-color: #254455; }
+.close-button:hover { -fx-background-color: #ae4148; }
+.nav { -fx-padding: 8 20; -fx-background-color: #102c3e; -fx-border-color: transparent transparent #2a4858 transparent; }
+.brand-icon { -fx-background-color: #f3c66f; -fx-background-radius: 9; -fx-padding: 10 12; -fx-text-fill: #112839; -fx-font-weight: bold; }
+.brand { -fx-font-size: 20px; -fx-font-weight: bold; }
+.eyebrow { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #98b9c6; }
+.home { -fx-padding: 20; }
+.game { -fx-padding: 14 16; }
+.hero-title { -fx-font-size: 42px; -fx-font-weight: bold; }
+.subtitle { -fx-font-size: 15px; -fx-text-fill: #bed2da; -fx-text-alignment: center; }
+.badge { -fx-background-color: #263f45; -fx-text-fill: #f3c66f; -fx-padding: 8 15; -fx-background-radius: 20; -fx-font-size: 10px; -fx-font-weight: bold; }
+.feature-card { -fx-background-color: #143144; -fx-background-radius: 12; -fx-padding: 16; -fx-pref-width: 270; -fx-border-color: #2b4b5b; -fx-border-radius: 12; }
+.card-title { -fx-font-size: 11px; -fx-font-weight: bold; }
+.muted { -fx-text-fill: #a8c3ce; -fx-font-size: 10px; }
+.section-title { -fx-font-size: 21px; -fx-font-weight: bold; }
+.panel { -fx-padding: 12; -fx-background-color: #122e40; -fx-background-radius: 12; -fx-border-radius: 12; -fx-border-color: #2b4d5f; }
+.active-panel { -fx-border-color: #e7b75f; -fx-background-color: #1c3a49; }
+.anchor-tag { -fx-text-fill: #f3c66f; -fx-font-weight: bold; -fx-font-size: 10px; }
+.clue { -fx-font-size: 14px; }
+.ocean { -fx-background-color: linear-gradient(to bottom, #123f55, #164c61); -fx-background-radius: 10; }
+.button { -fx-cursor: hand; -fx-font-weight: bold; }
+.primary-button { -fx-background-color: #f3c66f; -fx-text-fill: #162b36; -fx-background-radius: 8; -fx-padding: 9 18; -fx-font-size: 12px; }
+.primary-button:hover { -fx-background-color: #ffdc91; }
+.quiet-button, .small-button { -fx-background-color: #294d61; -fx-text-fill: #eaf3f4; -fx-background-radius: 7; -fx-padding: 8 14; }
+.small-button { -fx-padding: 6 10; -fx-font-size: 10px; }
+.quiet-button:hover, .small-button:hover { -fx-background-color: #3a647a; }
+.button:focused { -fx-border-color: #f3c66f; -fx-border-radius: 7; }
+.button:disabled { -fx-opacity: 0.38; -fx-cursor: default; }
+.combo-box { -fx-background-color: #dce9ee; -fx-background-radius: 7; -fx-padding: 4; }
+.combo-box .list-cell { -fx-text-fill: #163143; }
+.tile { -fx-alignment: center; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 5; -fx-border-radius: 5; }
+.wood { -fx-background-color: #92704c; -fx-border-color: #c59b64; }
+.anchor { -fx-background-color: #94702f; -fx-border-color: #f3c66f; -fx-border-width: 2; }
+.entry { -fx-background-color: #21485d; -fx-border-color: #7394a6; }
+.active-tile { -fx-border-width: 1.5; }
+.cursor { -fx-border-color: #ffe09a; -fx-border-width: 2.5; -fx-effect: dropshadow(gaussian, #e5ba5355, 7, 0.2, 0, 0); }
+.empty { -fx-background-color: #1c3c4f; -fx-border-color: #32576b; -fx-font-size: 11px; }
+.correct { -fx-background-color: #287d65; -fx-text-fill: white; }
+.present { -fx-background-color: #987423; -fx-text-fill: white; }
+.absent, .sunk { -fx-background-color: #485966; -fx-text-fill: #d8e0e4; }
+.key { -fx-background-color: #365b70; -fx-text-fill: #f0f6f8; -fx-background-radius: 5; -fx-padding: 6 7; -fx-font-size: 12px; }
+.key.correct { -fx-background-color: #287d65; }
+.key.present { -fx-background-color: #987423; }
+.key.absent { -fx-background-color: #485966; }
+.key:hover { -fx-opacity: 0.8; }
+.feedback { -fx-text-fill: #f3cf85; -fx-font-size: 11px; }
+.legend-green { -fx-text-fill: #82dbb8; -fx-font-size: 10px; }
+.legend-gold { -fx-text-fill: #f3cf85; -fx-font-size: 10px; }
+.score { -fx-font-size: 85px; -fx-font-weight: bold; -fx-text-fill: #f3c66f; }
+.footer { -fx-padding: 3 20; -fx-background-color: #102637; }
+.dialog-pane { -fx-background-color: #123044; -fx-font-family: "Segoe UI"; }
+.dialog-pane > .content.label { -fx-text-fill: #eaf3f4; -fx-font-size: 14px; -fx-padding: 18; }
+.dialog-pane .header-panel { -fx-background-color: #1b4358; }
+.dialog-pane .header-panel .label { -fx-text-fill: #f3c66f; -fx-font-size: 18px; }
+.dialog-pane .button { -fx-background-color: #f3c66f; -fx-text-fill: #142d3c; }
+
+/* Illustrated expedition theme */
+.wood { -fx-background-color: linear-gradient(to bottom, #c69b64, #987247); -fx-border-color: #e1bc82; -fx-border-width: 1.5; }
+.entry { -fx-background-color: linear-gradient(to bottom, #47696e, #274856); -fx-border-color: #c6b27f; }
+.anchor { -fx-background-color: linear-gradient(to bottom, #ab8740, #83622d); }
+.correct { -fx-background-color: linear-gradient(to bottom, #398d70, #256b56); }
+.panel { -fx-effect: dropshadow(gaussian, #00000020, 8, 0, 0, 3); }
+.check-box { -fx-text-fill: #eaf3f4; -fx-font-size: 13px; }
+.check-box .box { -fx-background-color: #34586a; -fx-border-color: #92b3be; -fx-border-radius: 3; }
+.check-box:selected .mark { -fx-background-color: #f3c66f; }
