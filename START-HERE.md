@@ -1,4 +1,4 @@
-# Word-Wreck! — Offline Expeditions
+# Word-Wreck! — 8-Bit Ocean Quest
 
 The updated Java 11 / JavaFX 13 project. This is the complete project, not the earlier two-file patch.
 
@@ -11,7 +11,45 @@ The updated Java 11 / JavaFX 13 project. This is the complete project, not the e
 On Windows you can instead double-click `START-GAME.bat` if JDK 11+ and Maven are already on your PATH.
 The first build needs internet to download JavaFX/Maven dependencies. After those are cached, the game can run offline; if Maven tries to connect, run `mvn -o javafx:run`. Offline gameplay does not eliminate that initial installation requirement. Your original POM versions are retained.
 
-## New in this edition
+## Shark and animation update
+
+- Replaced the tiny fish-shaped sprite with an original 48 × 24 shark: tall swept dorsal fin, asymmetrical tail, pointed snout, gills, pale belly and prominent pectoral fin. At the same pixel scale it is roughly twice the old width/height.
+- Home and board sharks now swim gently and change tail frames, with small pixel wakes. Smaller versions fit the two threat lanes without changing the screen layout.
+- Animation updates at 10 frames per second. Sea waves remain slower at 2.5 frames per second to avoid excessive movement.
+- Wrong guesses briefly shake the raft; solving A gives a small celebratory bounce before continuing on B. Effects do not delay or alter scoring. Final endings still open the result screen promptly.
+- Settings → Animate sea and sharks disables swimming, wakes moving, shark approaches and guess effects. Switching screens or restarting resets any active raft effect.
+- Fonts, layout, dictionary settings, clues and rules are preserved.
+- Update PrimaryController.java and OceanArt.java together, or extract this complete ZIP into a fresh folder.
+- Sprite dimensions and FXML wiring were checked, and the art preview was visually inspected. Actual animation playback still needs local JavaFX testing; this environment has no JavaFX runtime.
+
+## Readability and larger home artwork update
+
+- Clear mixed-case system text for clues, instructions, settings, buttons and letter tiles. Pixel lettering is retained for the logo, hero title, level headings and score.
+- The home sea artwork grows from 860 × 190 to 1080 × 280 logical pixels. The home spacing/cards are tightened to retain the fixed window layout.
+- Enlarged palms and islands, a lighthouse, distant coastline, sailboat and larger central raft build out the 8-bit scenery.
+- Shark-track labels use clearer text and more separation from the shark path.
+- This is a visual update; dictionary settings, saved scores, hints and game rules are unchanged.
+- Replace App/Controller/resources as a complete project or copy the changed PrimaryController.java, OceanArt.java, primary.fxml and wordwreck.css together.
+- FXML fields, handlers and canvas sizes were checked. Actual JavaFX layout and Windows font rendering still need a local run; a JavaFX runtime is unavailable here.
+
+## Original 8-bit visual overhaul
+
+- Display headings use the bundled original **Wreck Pixel** font, loaded by App.java. No font installation or font download is needed.
+- Retro title treatment, hard-edged panels, beveled buttons/keyboard, square letter tiles and a limited ocean/sunset palette.
+- Original integer-grid pixel sprites for sharks, palm islands, raft logs and compass; sea bands, block-wave animation and a sunset home scene.
+- Settings → Animate sea and sharks controls both animations. The sea updates at 2.5 frames per second and stops on the results screen; it does not change gameplay timing.
+- Original game logic, dictionary modes, hint definitions, vertical B history and local saved preferences remain.
+- `PIXEL-ART-PREVIEW.png` previews the bundled font, sprites and palette. It is an art board, NOT a captured JavaFX screenshot.
+- `design/` contains the editable font generator and art-preview generator. Python/fontTools/Pillow are needed only to regenerate those design files, not to play the game.
+- The original pixel font and sprite artwork in this project may be used, modified and redistributed with your game.
+
+This is an 8-bit-inspired visual design, not an emulator or a restriction to historical hardware. The logical window is still 1180 × 780. Fractional display/window scaling may soften pixel edges slightly.
+
+For an existing project, replace **App.java, PrimaryController.java, OceanArt.java, primary.fxml and wordwreck.css**, and add **src/main/resources/com/example/fonts/wreck-pixel.ttf**. Keep the existing offline/settings classes and module requirements. The easiest option is to extract this complete project to a fresh folder.
+
+Validation for this visual pass: the font was opened/rendered successfully, the supplied sprite preview was visually inspected, and FXML/controller field types and handlers match. JavaFX compilation, screen layout, font rendering on Windows, and runtime animations still need a local check because this environment has no JavaFX runtime or Maven.
+
+## Previous edition features retained
 
 - **Settings → online dictionary checkbox**: off by default for a new installation. OFF is Offline Practice: complete A–Z guesses can be submitted instantly; no dictionary requests are made. This does not validate English words. ON restores the real-word lookup. Incomplete guesses stay blocked in both modes.
 - You can change the setting during a round without losing letters, guesses, or anchor progress. Pending lookups cannot override the new mode. No automatic mode change occurs during a network outage; turn the setting off yourself if you want practice mode.

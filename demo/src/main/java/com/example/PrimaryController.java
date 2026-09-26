@@ -53,7 +53,8 @@ public class PrimaryController {
     private final Canvas heroCanvas = new Canvas(), trackCanvas = new Canvas(), waterCanvas = new Canvas();
     private final DoubleProperty threatA = new SimpleDoubleProperty();
     private final DoubleProperty threatB = new SimpleDoubleProperty();
-    private Timeline sharkMotion;
+    private Timeline sharkMotion, seaMotion, guessEffect;
+    private int seaFrame;
     private GameEngine game;
     private int levelIndex;
     private char[] entry;
@@ -104,6 +105,7 @@ public class PrimaryController {
             });
         });
         Platform.runLater(this::drawHero);
+        syncSeaMotion();
     }
     @FXML private void showHome() {
         cancelLookup();
@@ -132,7 +134,7 @@ public class PrimaryController {
         Label explanation = text("OFF: play offline; any complete A–Z guess is accepted.\n"
             + "ON: real-word validation; new lookups need internet.\n"
             + "Switching modes keeps your current letters and attempts.", "muted");
-        CheckBox motion = new CheckBox("Animate shark movement");
+        CheckBox motion = new CheckBox("Animate sea and sharks");
         motion.setSelected(settings.motion());
         VBox content = new VBox(16, online, explanation, motion);
         content.setPadding(new javafx.geometry.Insets(18));
@@ -143,12 +145,13 @@ public class PrimaryController {
         if (dialog.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.APPLY) {
             cancelLookup();
             settings.set(online.isSelected(), motion.isSelected());
+            if (!settings.motion()) resetEffects();
             boolean saved = settings.flush();
             if (game != null && game.outcome() == Outcome.PLAYING) {
                 practiceRound |= !settings.online();
                 if (gamePane.isVisible()) { entryChanged(); render(); }
             }
-            updateModeLabel(); updateHomeStatus();
+            updateModeLabel(); updateHomeStatus(); syncSeaMotion();
             if (!saved) showDialog("Settings", "Applied for this session", "Could not save settings to disk on this computer.");
         }
     }
@@ -173,6 +176,7 @@ public class PrimaryController {
         game = new GameEngine(Levels.ALL.get(index));
         if (sharkMotion != null) sharkMotion.stop();
         threatA.set(0); threatB.set(0);
+        resetEffects();
         resetEntry(); show(gamePane); entryChanged();
         messageLabel.setText("Start with A. Watch the gold anchor tile — a green match there can save the junction.");
         render();
@@ -181,6 +185,8 @@ public class PrimaryController {
         for (Node screen : Arrays.asList(homePane, gamePane, resultPane)) {
             screen.setVisible(screen == chosen); screen.setManaged(screen == chosen);
         }
+        if (!gamePane.isVisible()) resetEffects();
+        syncSeaMotion();
     }
     private boolean canType() { return game != null && gamePane.isVisible() && game.outcome() == Outcome.PLAYING; }
     private boolean locked(int index) { return game.isSecond() && index == game.level().anchorB(); }
@@ -207,6 +213,7 @@ public class PrimaryController {
             return; // Physical Enter follows exactly the same gate as the button.
         }
         boolean wasSecond = game.isSecond();
+        boolean correctGuess = new String(entry).equals(game.target());
         try {
             game.submit(new String(entry));
             resetEntry();
@@ -221,6 +228,7 @@ public class PrimaryController {
                     : "The anchor held! Raft A's outer logs sank. Save B to finish with 50%.");
             } else messageLabel.setText("The shark moved closer. Use the tile colors and clue for your next guess.");
             render();
+            playGuessEffect(correctGuess);
         } catch (IllegalArgumentException ex) { messageLabel.setText(ex.getMessage()); }
     }
     private Label text(String value, String... classes) {
@@ -288,9 +296,9 @@ public class PrimaryController {
             Canvas grain = new Canvas(size, size);
             GraphicsContext ink = grain.getGraphicsContext2D();
             ink.setStroke(Color.web("#172f35", 0.25)); ink.setLineWidth(1);
-            ink.strokeLine(5, size-6, size-5, size-6);
+            ink.setFill(Color.web("#15273b", 0.3)); ink.fillRect(4, size-6, size-8, 2);
             ink.setFill(Color.web("#f9e4b8", 0.5));
-            ink.fillOval(3,3,2,2); ink.fillOval(size-5,3,2,2);
+            ink.fillRect(3,3,2,2); ink.fillRect(size-5,3,2,2);
             cell.setGraphic(grain); cell.setContentDisplay(ContentDisplay.CENTER);
             if (active) cell.getStyleClass().add("active-tile");
             if (active && position == next) cell.getStyleClass().add("cursor");
@@ -463,31 +471,78 @@ public class PrimaryController {
             + "Use A–Z, Backspace and Enter, or the onscreen keys. Restart begins a fresh round.");
     }
     private void drawHero() {
-        double w = Math.max(heroArt.getWidth(), 500); heroCanvas.setWidth(w); heroCanvas.setHeight(190);
-        GraphicsContext g = heroCanvas.getGraphicsContext2D(); OceanArt.sea(g,w,190);
-        OceanArt.island(g,25,85,0.85); OceanArt.island(g,w-135,60,0.7);
-        OceanArt.compass(g,w-47,145);
-        double ox=w/2-96, oy=68;
-        g.setFont(javafx.scene.text.Font.font("Segoe UI",javafx.scene.text.FontWeight.BOLD,20));
+        double w = Math.max(heroArt.getWidth(), 500);
+        heroCanvas.setWidth(w); heroCanvas.setHeight(280);
+        GraphicsContext g = heroCanvas.getGraphicsContext2D();
+        OceanArt.sea(g,w,280,seaFrame/4);
+        OceanArt.sky(g,w,95); OceanArt.horizon(g,w,87);
+        // Foreground islands, a distant beacon, and a passing ship frame the raft.
+        OceanArt.island(g,26,144,1.8);
+        OceanArt.island(g,118,178,1.2);
+        OceanArt.island(g,w-189,134,1.5);
+        OceanArt.lighthouse(g,w-294,103);
+        OceanArt.sailboat(g,w*.28,92);
+        OceanArt.compass(g,w-36,240);
+        double ox=w/2-116, oy=153;
+        g.setFont(javafx.scene.text.Font.font("Segoe UI",javafx.scene.text.FontWeight.BOLD,27));
         for(int i=0;i<5;i++) {
-            OceanArt.log(g,ox+i*40,oy,36);
-            g.setFill(Color.web("#183c4a"));g.fillText("CARGO".substring(i,i+1),ox+i*40+10,oy+25);
+            OceanArt.log(g,ox+i*48,oy,44);
+            g.setFill(Color.web("#fff1bd"));g.fillText("CARGO".substring(i,i+1),ox+i*48+12,oy+31);
         }
-        OceanArt.log(g,ox+80,oy-40,36); OceanArt.log(g,ox+80,oy+40,36);
-        g.setStroke(Color.web("#f4cc73"));g.setLineWidth(2);g.strokeRoundRect(ox+80,oy,36,36,7,7);
-        OceanArt.shark(g,w*.24,140,0.8); OceanArt.shark(g,w*.72,110,0.8);
+        OceanArt.log(g,ox+96,oy-48,44); OceanArt.log(g,ox+96,oy+48,44);
+        g.setStroke(Color.web("#ffe4a0"));g.setLineWidth(3);g.strokeRect(ox+96,oy,44,44);
+        double drift=settings.motion() ? Math.rint(Math.sin(seaFrame*Math.PI/60)*13) : 0;
+        double bob=settings.motion() ? Math.rint(Math.sin(seaFrame*Math.PI/12)*2) : 0;
+        OceanArt.wake(g,w*.23+drift-5,250+bob,seaFrame);
+        OceanArt.shark(g,w*.23+drift,228+bob,1.2,seaFrame);
+        OceanArt.wake(g,w*.72-drift-5,225-bob,seaFrame+6);
+        OceanArt.shark(g,w*.72-drift,203-bob,1.1,seaFrame+6);
     }
     private void drawWater() {
         double w=waterArt.getWidth(), h=waterArt.getHeight();
         if(w<=0 || h<=0)return;
         waterCanvas.setWidth(w);waterCanvas.setHeight(h);
-        GraphicsContext g=waterCanvas.getGraphicsContext2D();OceanArt.sea(g,w,h);
+        GraphicsContext g=waterCanvas.getGraphicsContext2D();OceanArt.sea(g,w,h,seaFrame/4);
         OceanArt.island(g,15,h*.4,0.65);
         OceanArt.compass(g,w-45,42);
-        OceanArt.shark(g,w-95,h-48,0.8);
+        double drift=settings.motion() ? Math.rint(Math.sin(seaFrame*Math.PI/60)*10) : 0;
+        OceanArt.wake(g,w-131+drift,h-23,seaFrame);
+        OceanArt.shark(g,w-126+drift,h-46,0.8,seaFrame);
     }
-    private void ocean(GraphicsContext g,double w,double h) { OceanArt.sea(g,w,h); }
-    private void fin(GraphicsContext g,double x,double y) { OceanArt.shark(g,x-8,y+1,0.65); }
+    private void ocean(GraphicsContext g,double w,double h) { OceanArt.sea(g,w,h,seaFrame/4); }
+    private void fin(GraphicsContext g,double x,double y) { OceanArt.shark(g,x-8,y+4,0.65,seaFrame); }
+    private void resetEffects() {
+        if (guessEffect != null) guessEffect.stop();
+        crossword.setTranslateX(0); crossword.setScaleX(1); crossword.setScaleY(1);
+    }
+    private void playGuessEffect(boolean correct) {
+        resetEffects();
+        if (!settings.motion()) return;
+        if (correct) {
+            guessEffect=new Timeline(
+                new KeyFrame(Duration.millis(110),new KeyValue(crossword.scaleXProperty(),1.04),new KeyValue(crossword.scaleYProperty(),1.04)),
+                new KeyFrame(Duration.millis(260),new KeyValue(crossword.scaleXProperty(),1),new KeyValue(crossword.scaleYProperty(),1)));
+        } else {
+            guessEffect=new Timeline(
+                new KeyFrame(Duration.millis(50),new KeyValue(crossword.translateXProperty(),-3)),
+                new KeyFrame(Duration.millis(100),new KeyValue(crossword.translateXProperty(),3)),
+                new KeyFrame(Duration.millis(150),new KeyValue(crossword.translateXProperty(),-2)),
+                new KeyFrame(Duration.millis(220),new KeyValue(crossword.translateXProperty(),0)));
+        }
+        guessEffect.play();
+    }
+    private void syncSeaMotion() {
+        if (seaMotion == null) {
+            seaMotion = new Timeline(new KeyFrame(Duration.millis(100), e -> {
+                seaFrame = (seaFrame + 1) % 120;
+                if (homePane.isVisible()) drawHero();
+                if (gamePane.isVisible()) { drawWater(); drawThreats(); }
+            }));
+            seaMotion.setCycleCount(Timeline.INDEFINITE);
+        }
+        if (settings.motion() && (homePane.isVisible() || gamePane.isVisible())) seaMotion.play();
+        else seaMotion.stop();
+    }
     private void animateThreats() {
         if (sharkMotion != null) sharkMotion.stop();
         if (!settings.motion()) {
@@ -502,14 +557,15 @@ public class PrimaryController {
         if (game == null) return;
         double w = Math.max(sharkTrack.getWidth(), 380); trackCanvas.setWidth(w); trackCanvas.setHeight(60);
         GraphicsContext g = trackCanvas.getGraphicsContext2D(); ocean(g,w,60);
-        g.setFont(javafx.scene.text.Font.font("Segoe UI", 12));
+        g.setFont(javafx.scene.text.Font.font("Segoe UI", 13));
         for (int row=0;row<2;row++) {
             boolean down = row==1; double y = 1+row*29;
             g.setFill(Color.web("#d2e8ee")); g.fillText((down?"B":"A") + " · " + branchStatus(down),12,y+16);
-            double start = 140, end = w-48;
-            for (int i=0;i<=5;i++) { g.setFill(Color.web("#426b7a")); g.fillOval(start+(end-start)*i/5,y+29,3,3); }
+            double start = 180, end = w-48;
+            for (int i=0;i<=5;i++) { g.setFill(Color.web("#426b7a")); g.fillRect(Math.rint(start+(end-start)*i/5),y+25,3,3); }
             boolean sunk = game.wrong(down)==5 || game.outcome()==Outcome.IMMEDIATE_SINK;
-            g.setFill(Color.web(sunk?"#50606b":"#bd8a59")); g.fillRoundRect(w-40,y+8,28,22,4,4);
+            g.setFill(Color.web(sunk?"#50606b":"#bd8a59")); g.fillRect(w-40,y+8,28,19);
+            g.setStroke(Color.web("#f0cf8c"));g.strokeLine(w-36,y+12,w-16,y+12);
             if (game.solved(down)) {
                 g.setFill(Color.web("#7edbb5")); g.fillText("SAFE",start,y+18);
             } else fin(g,start+(end-start)*(down ? threatB.get() : threatA.get())/5-10,y+3);

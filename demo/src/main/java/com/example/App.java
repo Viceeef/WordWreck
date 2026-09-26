@@ -18,6 +18,8 @@ public class App extends Application {
     private static double oldX, oldY, oldW, oldH;
 
     @Override public void start(Stage stage) throws IOException {
+        if (javafx.scene.text.Font.loadFont(App.class.getResourceAsStream("fonts/wreck-pixel.ttf"), 12) == null)
+            throw new IOException("Missing bundled pixel font: fonts/wreck-pixel.ttf");
         window = stage;
         stage.initStyle(StageStyle.UNDECORATED);
         stage.setResizable(false);
@@ -28,7 +30,7 @@ public class App extends Application {
             });
         });
         viewport = new StackPane();
-        viewport.setStyle("-fx-background-color: #071724;");
+        viewport.setStyle("-fx-background-color: #10162c;");
         setRoot("primary");
         Rectangle2D screen = Screen.getPrimary().getVisualBounds();
         double fit = Math.min(1, Math.min(screen.getWidth()/WIDTH, screen.getHeight()/HEIGHT));
@@ -36,7 +38,7 @@ public class App extends Application {
         scene.getStylesheets().add(Objects.requireNonNull(App.class.getResource("wordwreck.css")).toExternalForm());
         viewport.widthProperty().addListener((o,a,b) -> scalePage());
         viewport.heightProperty().addListener((o,a,b) -> scalePage());
-        stage.setTitle("Word-Wreck! | Save the anchor");
+        stage.setTitle("WORD-WRECK! | 8-BIT OCEAN QUEST");
         stage.setScene(scene);
         stage.setOnShown(e -> scalePage());
         stage.show();
