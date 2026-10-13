@@ -1,8 +1,13 @@
 package com.example;
 
 import com.example.preview.Levels;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.*;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -12,17 +17,23 @@ import java.util.concurrent.*;
  * controls Enter in PrimaryController; this class does not consume attempts.
  */
 public final class DictionaryService {
-    public enum Result { VALID, INVALID, UNAVAILABLE }
-    private final String endpoint;
+    public enum Result { VALID, INVALID, VALID_BUILT_IN, INVALID_BUILT_IN, UNAVAILABLE }
+    private final String dictionaryEndpoint;
+    private final boolean useDatamuseFirst;
+    private final Set<String> builtInWords = loadBuiltInWords();
     private final Map<String, Result> cache = new ConcurrentHashMap<>();
     private final HttpClient client = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(5)).build();
 
     public DictionaryService() {
-        this("https://api.dictionaryapi.dev/api/v2/entries/en/");
+        this("https://api.dictionaryapi.dev/api/v2/entries/en/", true);
     }
     DictionaryService(String endpoint) {
-        this.endpoint = endpoint;
+        this(endpoint, false);
+    }
+    private DictionaryService(String endpoint, boolean useDatamuseFirst) {
+        this.dictionaryEndpoint = endpoint;
+        this.useDatamuseFirst = useDatamuseFirst;
         // Curated level answers remain playable even if the service omits a plural.
         Levels.ALL.forEach(level -> {
             cache.put(level.across(), Result.VALID);
@@ -43,18 +54,68 @@ public final class DictionaryService {
         if (!online) return CompletableFuture.completedFuture(Result.VALID);
         Result saved = cache.get(word);
         if (saved != null) return CompletableFuture.completedFuture(saved);
+        CompletableFuture<Result> onlineResult = useDatamuseFirst
+            ? checkDatamuse(word).thenCompose(result -> result == Result.UNAVAILABLE
+                ? checkFreeDictionary(word) : CompletableFuture.completedFuture(result))
+            : checkFreeDictionary(word);
+        return onlineResult.thenApply(result -> {
+            if (result == Result.UNAVAILABLE) {
+                if (builtInWords.isEmpty()) return Result.UNAVAILABLE;
+                return builtInWords.contains(word) ? Result.VALID_BUILT_IN : Result.INVALID_BUILT_IN;
+            }
+            cache.put(word, result);
+            return result;
+        });
+    }
+
+    private CompletableFuture<Result> checkDatamuse(String word) {
         HttpRequest request = HttpRequest.newBuilder(URI.create(
-            endpoint + word.toLowerCase(Locale.ROOT)))
+            "https://api.datamuse.com/words?sp=" + word.toLowerCase(Locale.ROOT) + "&max=1"))
+            .timeout(Duration.ofSeconds(5))
+            .header("Accept", "application/json").GET().build();
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            .handle((response, error) -> error == null
+                ? classifyDatamuseResponse(response.statusCode(), response.body(), word)
+                : Result.UNAVAILABLE);
+    }
+
+    private CompletableFuture<Result> checkFreeDictionary(String word) {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(
+            dictionaryEndpoint + word.toLowerCase(Locale.ROOT)))
             .timeout(Duration.ofSeconds(7))
             .header("Accept", "application/json").GET().build();
-        // sendAsync keeps the JavaFX screen responsive during the network call.
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
             .handle((response, error) -> {
                 if (error != null) return Result.UNAVAILABLE;
-                Result result = classifyHttpResponse(response.statusCode(), response.body());
-                if (result != Result.UNAVAILABLE) cache.put(word, result);
-                return result;
+                return classifyHttpResponse(response.statusCode(), response.body());
             });
+    }
+
+    /** Datamuse returns an empty list for an unlisted word; require an exact match. */
+    static Result classifyDatamuseResponse(int status, String body, String word) {
+        if (status != 200 || body == null) return Result.UNAVAILABLE;
+        String response = body.trim();
+        if (response.equals("[]")) return Result.INVALID;
+        if (!response.startsWith("[") || !response.endsWith("]")) return Result.UNAVAILABLE;
+        String exactWord = "\"word\"\\s*:\\s*\"" + word.toLowerCase(Locale.ROOT) + "\"";
+        return java.util.regex.Pattern.compile(exactWord, java.util.regex.Pattern.CASE_INSENSITIVE)
+            .matcher(response).find() ? Result.VALID : Result.INVALID;
+    }
+
+    private static Set<String> loadBuiltInWords() {
+        InputStream stream = DictionaryService.class.getResourceAsStream("/words.txt");
+        if (stream == null) return Set.of();
+        Set<String> words = new HashSet<>();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String word = line.trim().toUpperCase(Locale.ROOT);
+                if (word.matches("[A-Z]{5,9}")) words.add(word);
+            }
+        } catch (IOException error) {
+            return Set.of();
+        }
+        return Set.copyOf(words);
     }
 
     /** A server failure is retryable; it must never count as a wrong guess. */

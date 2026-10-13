@@ -243,7 +243,9 @@ public class PrimaryController {
     private void submitGuess() {
         if (!isTypingAllowed()) return;
         for (char c : typedLetters) if (c == 0) { messageLabel.setText("Fill every empty tile before submitting. No attempt used."); return; }
-        if (wordValidationResult != DictionaryService.Result.VALID || !new String(typedLetters).equals(approvedTypedWord)) {
+        if ((wordValidationResult != DictionaryService.Result.VALID
+                && wordValidationResult != DictionaryService.Result.VALID_BUILT_IN)
+                || !new String(typedLetters).equals(approvedTypedWord)) {
             return; // Physical Enter follows exactly the same gate as the button.
         }
         boolean wasSecond = game.isWorkingOnWordB();
@@ -389,12 +391,18 @@ public class PrimaryController {
                 if (wordValidationResult == DictionaryService.Result.VALID) {
                     approvedTypedWord = word;
                     dictionaryLabel.setText("Aye, that's a word! Press Enter to send it sailing.");
+                } else if (wordValidationResult == DictionaryService.Result.VALID_BUILT_IN) {
+                    approvedTypedWord = word;
+                    dictionaryLabel.setText("Online dictionaries unavailable. This word is in the built-in list. Press Enter.");
                 } else if (wordValidationResult == DictionaryService.Result.INVALID) {
                     dictionaryLabel.setText("Not in our dictionary, matey. Change yer letters — no attempt used.");
+                } else if (wordValidationResult == DictionaryService.Result.INVALID_BUILT_IN) {
+                    dictionaryLabel.setText("Online dictionaries unavailable. Not in the small built-in list; retry lookup or change letters.");
                 } else {
                     dictionaryLabel.setText("No connection. Retry, or turn dictionary OFF in Settings. No attempt used.");
                 }
-                retryButton.setDisable(wordValidationResult != DictionaryService.Result.UNAVAILABLE);
+                retryButton.setDisable(wordValidationResult != DictionaryService.Result.UNAVAILABLE
+                    && wordValidationResult != DictionaryService.Result.INVALID_BUILT_IN);
                 updateEnterButtonState();
             }));
         });
@@ -407,7 +415,9 @@ public class PrimaryController {
     /** The button and physical Enter use the same approval rule. */
     private void updateEnterButtonState() {
         if (enterButton != null) enterButton.setDisable(!isTypingAllowed()
-            || wordValidationResult != DictionaryService.Result.VALID || !new String(typedLetters).equals(approvedTypedWord));
+            || (wordValidationResult != DictionaryService.Result.VALID
+                && wordValidationResult != DictionaryService.Result.VALID_BUILT_IN)
+            || !new String(typedLetters).equals(approvedTypedWord));
     }
     @FXML private void showHint() {
         if (!isTypingAllowed()) return;

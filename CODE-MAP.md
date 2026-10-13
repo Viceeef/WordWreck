@@ -17,7 +17,7 @@ Use this page during your defense to find the live game logic quickly. The older
 | `demo/src/main/java/com/example/preview/GameEngine.java` | The **live game rules**: guesses, colors, anchor, five endings, and score. It has no JavaFX dependency. |
 | `demo/src/main/java/com/example/preview/Level.java` | Stores one A/B word pair, clues, and the crossing indexes; rejects invalid pairs. |
 | `demo/src/main/java/com/example/preview/Levels.java` | The 20 fixed word pairs used by the game. |
-| `demo/src/main/java/com/example/DictionaryService.java` | Optional online word lookup, result cache, and offline acceptance. |
+| `demo/src/main/java/com/example/DictionaryService.java` | Optional online lookup through Datamuse, backup lookup through Free Dictionary API, and a small built-in word list if both are unreachable. |
 | `demo/src/main/java/com/example/GameSettings.java` | Saves switches and separate best scores with Java Preferences. |
 | `demo/src/main/java/com/example/PirateHints.java` | Fixed hints for level words. |
 | `demo/src/main/java/com/example/SoundManager.java` | Sound effects and looping music. |

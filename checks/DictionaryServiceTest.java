@@ -39,18 +39,22 @@ public class DictionaryServiceTest {
             assert service.validateWord("ZZZZZ", false).join() == DictionaryService.Result.VALID;
             assert service.validateWord("ZZZZZ", true).join() == DictionaryService.Result.INVALID;
             assert hits.get() == 2 : "Mode switches must not contaminate dictionary cache";
-            assert service.validateWord("QUAYS").get(5, TimeUnit.SECONDS) == DictionaryService.Result.UNAVAILABLE;
-            assert service.validateWord("QUAYS").get(5, TimeUnit.SECONDS) == DictionaryService.Result.UNAVAILABLE;
-            assert hits.get() == 4 : "Outages must remain retryable";
+            assert service.validateWord("SEASIDE").get(5, TimeUnit.SECONDS) == DictionaryService.Result.VALID_BUILT_IN;
+            assert service.validateWord("QUAYS").get(5, TimeUnit.SECONDS) == DictionaryService.Result.INVALID_BUILT_IN;
+            assert service.validateWord("QUAYS").get(5, TimeUnit.SECONDS) == DictionaryService.Result.INVALID_BUILT_IN;
+            assert hits.get() == 5 : "Fallback results must remain retryable";
             for (Level l : Levels.ALL) {
                 assert service.validateWord(l.across()).join() == DictionaryService.Result.VALID;
                 assert service.validateWord(l.down()).join() == DictionaryService.Result.VALID;
                 assert !PirateHints.forWord(l.across()).contains("let the tile colors");
                 assert !PirateHints.forWord(l.down()).contains("let the tile colors");
             }
-            assert hits.get() == 4 : "Curated answers should work offline";
+            assert hits.get() == 5 : "Curated answers should work offline";
             assert DictionaryService.classifyHttpResponse(429, "{}") == DictionaryService.Result.UNAVAILABLE;
             assert DictionaryService.classifyHttpResponse(200, "<html>error</html>") == DictionaryService.Result.UNAVAILABLE;
+            assert DictionaryService.classifyDatamuseResponse(200, "[{\"word\":\"apple\",\"score\":1}]", "APPLE") == DictionaryService.Result.VALID;
+            assert DictionaryService.classifyDatamuseResponse(200, "[]", "NGGAGG") == DictionaryService.Result.INVALID;
+            assert DictionaryService.classifyDatamuseResponse(500, "[]", "APPLE") == DictionaryService.Result.UNAVAILABLE;
             System.out.println("PASS: async HTTP lookups, approval/rejection, caching, retryable errors, offline level answers and all pirate hints.");
         } finally { server.stop(0); }
     }

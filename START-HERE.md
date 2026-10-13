@@ -92,14 +92,13 @@ Validation for this visual pass: the font was opened/rendered successfully, the 
 
 Offline Practice skips lookups entirely. The rules below apply only when the dictionary setting is ON.
 
-New complete guesses are checked asynchronously through Free Dictionary API:
-https://dictionaryapi.dev/
+New complete guesses are checked asynchronously through Datamuse first, then Free Dictionary API if Datamuse is unavailable. If both services are unreachable, the game checks the small bundled `words.txt` list and clearly labels that result. The current service documentation is at https://www.datamuse.com/api/ and https://dictionaryapi.dev/.
 
 Only the typed word is included in the lookup URL. The game waits briefly after the final letter to avoid requests while editing. The screen remains responsive during lookup. Old responses cannot approve a newer guess or a different level.
 
 - Confirmed word: Enter unlocks.
 - Word not listed: Enter stays disabled; change the letters. No attempt is spent.
-- Network error, timeout, rate limit or server error: Enter stays disabled and Retry Lookup becomes available. No attempt is spent.
+- If both online services fail: a word in the bundled list can still be submitted; an unlisted word stays blocked and Retry Lookup becomes available. No attempt is spent on a blocked word. The built-in list is limited, so a valid English word may need a retry when internet access returns.
 - Editing a word immediately removes its previous approval.
 - All curated level words work offline. Other words checked in this session are cached in memory. There is no full offline dictionary.
 
