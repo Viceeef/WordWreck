@@ -1,5 +1,6 @@
 module com.example {
     requires javafx.controls;
+    requires transitive javafx.graphics;
     requires javafx.fxml;
     requires javafx.media;
     requires java.net.http;
