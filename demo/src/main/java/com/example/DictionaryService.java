@@ -47,21 +47,38 @@ public final class DictionaryService {
 
     /** online=false accepts a complete A-Z word without making an HTTP request. */
     public CompletableFuture<Result> validateWord(String input, boolean online) {
-        String word = input == null ? "" : input.toUpperCase(Locale.ROOT);
+        String word;
+        if (input == null) {
+            word = "";
+        } else {
+            word = input.toUpperCase(Locale.ROOT);
+        }
         if (!word.matches("[A-Z]{5,9}")) {
             return CompletableFuture.completedFuture(Result.INVALID);
         }
         if (!online) return CompletableFuture.completedFuture(Result.VALID);
         Result saved = cache.get(word);
         if (saved != null) return CompletableFuture.completedFuture(saved);
-        CompletableFuture<Result> onlineResult = useDatamuseFirst
-            ? checkDatamuse(word).thenCompose(result -> result == Result.UNAVAILABLE
-                ? checkFreeDictionary(word) : CompletableFuture.completedFuture(result))
-            : checkFreeDictionary(word);
+        CompletableFuture<Result> onlineResult;
+        if (useDatamuseFirst) {
+            onlineResult = checkDatamuse(word).thenCompose(result -> {
+                if (result == Result.UNAVAILABLE) {
+                    return checkFreeDictionary(word);
+                } else {
+                    return CompletableFuture.completedFuture(result);
+                }
+            });
+        } else {
+            onlineResult = checkFreeDictionary(word);
+        }
         return onlineResult.thenApply(result -> {
             if (result == Result.UNAVAILABLE) {
                 if (builtInWords.isEmpty()) return Result.UNAVAILABLE;
-                return builtInWords.contains(word) ? Result.VALID_BUILT_IN : Result.INVALID_BUILT_IN;
+                if (builtInWords.contains(word)) {
+                    return Result.VALID_BUILT_IN;
+                } else {
+                    return Result.INVALID_BUILT_IN;
+                }
             }
             cache.put(word, result);
             return result;
@@ -74,9 +91,13 @@ public final class DictionaryService {
             .timeout(Duration.ofSeconds(5))
             .header("Accept", "application/json").GET().build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-            .handle((response, error) -> error == null
-                ? classifyDatamuseResponse(response.statusCode(), response.body(), word)
-                : Result.UNAVAILABLE);
+            .handle((response, error) -> {
+                if (error == null) {
+                    return classifyDatamuseResponse(response.statusCode(), response.body(), word);
+                } else {
+                    return Result.UNAVAILABLE;
+                }
+            });
     }
 
     private CompletableFuture<Result> checkFreeDictionary(String word) {
@@ -98,8 +119,13 @@ public final class DictionaryService {
         if (response.equals("[]")) return Result.INVALID;
         if (!response.startsWith("[") || !response.endsWith("]")) return Result.UNAVAILABLE;
         String exactWord = "\"word\"\\s*:\\s*\"" + word.toLowerCase(Locale.ROOT) + "\"";
-        return java.util.regex.Pattern.compile(exactWord, java.util.regex.Pattern.CASE_INSENSITIVE)
-            .matcher(response).find() ? Result.VALID : Result.INVALID;
+        boolean exactMatchFound = java.util.regex.Pattern.compile(exactWord, java.util.regex.Pattern.CASE_INSENSITIVE)
+            .matcher(response).find();
+        if (exactMatchFound) {
+            return Result.VALID;
+        } else {
+            return Result.INVALID;
+        }
     }
 
     private static Set<String> loadBuiltInWords() {

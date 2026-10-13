@@ -15,8 +15,20 @@ public class DictionaryServiceTest {
         server.createContext("/", exchange -> {
             hits.incrementAndGet();
             String path = exchange.getRequestURI().getPath();
-            int status = path.equals("/apple") ? 200 : path.equals("/zzzzz") ? 404 : 503;
-            String body = status == 200 ? "[{\"word\":\"apple\",\"meanings\":[]}]" : "{}";
+            int status;
+            if (path.equals("/apple")) {
+                status = 200;
+            } else if (path.equals("/zzzzz")) {
+                status = 404;
+            } else {
+                status = 503;
+            }
+            String body;
+            if (status == 200) {
+                body = "[{\"word\":\"apple\",\"meanings\":[]}]";
+            } else {
+                body = "{}";
+            }
             byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(status, bytes.length);
             exchange.getResponseBody().write(bytes);

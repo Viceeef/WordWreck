@@ -43,18 +43,38 @@ public final class GameEngine {
     public Level level() { return level; }
     public boolean isWorkingOnWordB() { return workingOnWordB; }
     public boolean isAnchorSecured() { return anchorSecured; }
-    public boolean isWordSolved(boolean wordB) { return wordB ? wordBSolved : wordASolved; }
+    public boolean isWordSolved(boolean wordB) {
+        if (wordB) {
+            return wordBSolved;
+        } else {
+            return wordASolved;
+        }
+    }
     public Outcome outcome() { return outcome; }
-    public String currentAnswer() { return workingOnWordB ? level.down() : level.across(); }
+    public String currentAnswer() {
+        if (workingOnWordB) {
+            return level.down();
+        } else {
+            return level.across();
+        }
+    }
 
     /** wordB=false means A/across; wordB=true means B/down. */
     public List<Guess> guessHistoryForWord(boolean wordB) {
-        return List.copyOf(wordB ? wordBGuesses : wordAGuesses);
+        if (wordB) {
+            return List.copyOf(wordBGuesses);
+        } else {
+            return List.copyOf(wordAGuesses);
+        }
     }
 
     /** A successful final guess is an attempt, but it is not a wrong guess. */
     public int wrongGuessCountForWord(boolean wordB) {
-        return guessHistoryForWord(wordB).size() - (isWordSolved(wordB) ? 1 : 0);
+        int wrongGuesses = guessHistoryForWord(wordB).size();
+        if (isWordSolved(wordB)) {
+            wrongGuesses--;
+        }
+        return wrongGuesses;
     }
 
     public int scorePercent() {
@@ -75,7 +95,12 @@ public final class GameEngine {
             throw new IllegalStateException("This level has ended.");
         }
 
-        String guessedWord = input == null ? "" : input.trim().toUpperCase(Locale.ROOT);
+        String guessedWord;
+        if (input == null) {
+            guessedWord = "";
+        } else {
+            guessedWord = input.trim().toUpperCase(Locale.ROOT);
+        }
         String answer = currentAnswer();
         if (!guessedWord.matches("[A-Z]{" + answer.length() + "}")) {
             throw new IllegalArgumentException("Enter exactly " + answer.length() + " letters.");
@@ -86,7 +111,12 @@ public final class GameEngine {
         }
 
         Guess guess = new Guess(guessedWord, evaluateLetters(answer, guessedWord));
-        List<Guess> activeHistory = workingOnWordB ? wordBGuesses : wordAGuesses;
+        List<Guess> activeHistory;
+        if (workingOnWordB) {
+            activeHistory = wordBGuesses;
+        } else {
+            activeHistory = wordAGuesses;
+        }
         activeHistory.add(guess);
         boolean guessedCorrectAnswer = guessedWord.equals(answer);
 
@@ -103,9 +133,17 @@ public final class GameEngine {
         } else {
             if (guessedCorrectAnswer) {
                 wordBSolved = true;
-                outcome = wordASolved ? Outcome.FULL_VICTORY : Outcome.SURVIVAL_CLEAR;
+                if (wordASolved) {
+                    outcome = Outcome.FULL_VICTORY;
+                } else {
+                    outcome = Outcome.SURVIVAL_CLEAR;
+                }
             } else if (wordBGuesses.size() == 5) {
-                outcome = wordASolved ? Outcome.PARTIAL_SURVIVAL : Outcome.BOTH_SUNK;
+                if (wordASolved) {
+                    outcome = Outcome.PARTIAL_SURVIVAL;
+                } else {
+                    outcome = Outcome.BOTH_SUNK;
+                }
             }
         }
         return guess;

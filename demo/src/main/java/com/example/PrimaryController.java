@@ -129,12 +129,24 @@ public class PrimaryController {
         soundManager.playGameMusic();
     }
     private void updateModeLabel() {
-        modeLabel.setText(settings.online() ? "DICTIONARY ON" : "OFFLINE PRACTICE");
+        if (settings.online()) {
+            modeLabel.setText("DICTIONARY ON");
+        } else {
+            modeLabel.setText("OFFLINE PRACTICE");
+        }
     }
     private void updateHomeStatus() {
         int selected = homeLevel.getSelectionModel().getSelectedIndex();
-        if (selected >= 0) homeStatus.setText("Best: " + settings.bestScoreForLevel(selected, !settings.online())
-            + "% · " + (settings.online() ? "Dictionary mode" : "Offline practice"));
+        if (selected >= 0) {
+            String modeDescription;
+            if (settings.online()) {
+                modeDescription = "Dictionary mode";
+            } else {
+                modeDescription = "Offline practice";
+            }
+            homeStatus.setText("Best: " + settings.bestScoreForLevel(selected, !settings.online())
+                + "% · " + modeDescription);
+        }
     }
     @FXML private void showSettings() {
         soundManager.playSfx(SoundManager.Sfx.BUTTON_1);
@@ -175,7 +187,11 @@ public class PrimaryController {
     }
     @FXML private void maximize() {
         App.toggleMaximize();
-        maximizeButton.setText(App.isExpanded() ? "Restore" : "Maximize");
+        if (App.isExpanded()) {
+            maximizeButton.setText("Restore");
+        } else {
+            maximizeButton.setText("Maximize");
+        }
     }
     @FXML private void closeApp() {
         cancelPendingDictionaryLookup();
@@ -266,9 +282,11 @@ public class PrimaryController {
                 soundManager.playSfx(SoundManager.Sfx.WRONG_WORD);
             }
             if (!wasSecond && game.isWorkingOnWordB()) {
-                messageLabel.setText(game.isWordSolved(false)
-                    ? "Raft A is safe! B is unlocked. The anchor is filled for you — type only the missing letters."
-                    : "The anchor held! Raft A's outer logs sank. Save B to finish with 50%.");
+                if (game.isWordSolved(false)) {
+                    messageLabel.setText("Raft A is safe! B is unlocked. The anchor is filled for you — type only the missing letters.");
+                } else {
+                    messageLabel.setText("The anchor held! Raft A's outer logs sank. Save B to finish with 50%.");
+                }
             } else messageLabel.setText("The shark moved closer. Use the tile colors and clue for your next guess.");
             refreshGameDisplay();
             animateGuessFeedback(correctGuess);
@@ -288,19 +306,51 @@ public class PrimaryController {
     private void refreshGameDisplay() {
         Level level = game.level(); boolean ended = game.outcome() != Outcome.PLAYING;
         levelTitle.setText(String.format("Level %02d / 20", levelIndex + 1));
-        phaseLabel.setText(ended ? "Voyage finished • " + game.scorePercent() + "%"
-            : game.isWorkingOnWordB() ? "Word B unlocked • Finish the second raft" : "Word A active • Word B is locked");
-        anchorLabel.setText(game.isAnchorSecured() ? "ANCHOR SECURED" : "ANCHOR AT RISK");
+        if (ended) {
+            phaseLabel.setText("Voyage finished • " + game.scorePercent() + "%");
+        } else if (game.isWorkingOnWordB()) {
+            phaseLabel.setText("Word B unlocked • Finish the second raft");
+        } else {
+            phaseLabel.setText("Word A active • Word B is locked");
+        }
+        if (game.isAnchorSecured()) {
+            anchorLabel.setText("ANCHOR SECURED");
+        } else {
+            anchorLabel.setText("ANCHOR AT RISK");
+        }
         statusA.setText("A / ACROSS · " + statusTextForWord(false));
         statusB.setText("B / DOWN · " + statusTextForWord(true));
         clueA.setText(level.clueA() + " (" + level.across().length() + " letters)");
         clueB.setText(level.clueB() + " (" + level.down().length() + " letters)");
         clueACard.getStyleClass().remove("active-panel"); clueBCard.getStyleClass().remove("active-panel");
-        if (!ended) (game.isWorkingOnWordB() ? clueBCard : clueACard).getStyleClass().add("active-panel");
-        clueBCard.setOpacity(!game.isWorkingOnWordB() && !ended ? 0.65 : 1);
-        inputTitle.setText(ended ? "THIS VOYAGE HAS ENDED" : "WORD " + (game.isWorkingOnWordB() ? "B" : "A")
-            + " · ATTEMPT " + (game.guessHistoryForWord(game.isWorkingOnWordB()).size() + 1) + " OF 5"
-            + (game.isWorkingOnWordB() ? " · ANCHOR LOCKED" : ""));
+        if (!ended) {
+            if (game.isWorkingOnWordB()) {
+                clueBCard.getStyleClass().add("active-panel");
+            } else {
+                clueACard.getStyleClass().add("active-panel");
+            }
+        }
+        if (!game.isWorkingOnWordB() && !ended) {
+            clueBCard.setOpacity(0.65);
+        } else {
+            clueBCard.setOpacity(1);
+        }
+        if (ended) {
+            inputTitle.setText("THIS VOYAGE HAS ENDED");
+        } else {
+            String wordName;
+            String anchorDescription;
+            if (game.isWorkingOnWordB()) {
+                wordName = "B";
+                anchorDescription = " · ANCHOR LOCKED";
+            } else {
+                wordName = "A";
+                anchorDescription = "";
+            }
+            inputTitle.setText("WORD " + wordName + " · ATTEMPT "
+                + (game.guessHistoryForWord(game.isWorkingOnWordB()).size() + 1)
+                + " OF 5" + anchorDescription);
+        }
         drawCrosswordBoard(); drawGuessHistoryForWord(false); drawGuessHistoryForWord(true); refreshKeyboardColors();
         hintButton.setDisable(ended);
         animateSharkPositions();
@@ -314,14 +364,25 @@ public class PrimaryController {
     }
     private void drawCrosswordBoard() {
         crossword.getChildren().clear(); Level l = game.level();
-        double size = l.down().length() > 7 ? 24 : 32;
+        double size;
+        if (l.down().length() > 7) {
+            size = 24;
+        } else {
+            size = 32;
+        }
         int next = -1;
         for (int i = 0; i < typedLetters.length; i++) if (typedLetters[i] == 0) { next = i; break; }
         for (int row = 0; row < l.down().length(); row++) for (int col = 0; col < l.across().length(); col++) {
             boolean across = row == l.anchorB(), down = col == l.anchorA();
             if (!across && !down) continue;
             boolean anchor = across && down;
-            String letter = ""; String style = anchor ? "anchor" : "wood";
+            String letter = "";
+            String style;
+            if (anchor) {
+                style = "anchor";
+            } else {
+                style = "wood";
+            }
             boolean sunk = game.outcome() == Outcome.IMMEDIATE_SINK || game.outcome() == Outcome.BOTH_SUNK
                 || across && !anchor && game.wrongGuessCountForWord(false) == 5 || down && !anchor && game.wrongGuessCountForWord(true) == 5;
             if (across && game.isWordSolved(false)) letter = "" + l.across().charAt(col);
@@ -329,13 +390,41 @@ public class PrimaryController {
             if (anchor && game.isAnchorSecured()) letter = "" + l.across().charAt(l.anchorA());
             if (!letter.isEmpty()) style = "correct";
             if (sunk) style = "sunk";
-            boolean active = game.outcome() == Outcome.PLAYING && (game.isWorkingOnWordB() ? down : across);
-            int position = game.isWorkingOnWordB() ? row : col;
-            if (active) {
-                letter = typedLetters[position] == 0 ? "" : "" + typedLetters[position];
-                style = isLockedAnchorPosition(position) ? "correct" : anchor ? "anchor" : "entry";
+            boolean active = false;
+            if (game.outcome() == Outcome.PLAYING) {
+                if (game.isWorkingOnWordB()) {
+                    active = down;
+                } else {
+                    active = across;
+                }
             }
-            Label cell = createLetterTile(letter.isEmpty() && anchor ? "◆" : letter, style, size);
+            int position;
+            if (game.isWorkingOnWordB()) {
+                position = row;
+            } else {
+                position = col;
+            }
+            if (active) {
+                if (typedLetters[position] == 0) {
+                    letter = "";
+                } else {
+                    letter = "" + typedLetters[position];
+                }
+                if (isLockedAnchorPosition(position)) {
+                    style = "correct";
+                } else if (anchor) {
+                    style = "anchor";
+                } else {
+                    style = "entry";
+                }
+            }
+            String displayedLetter;
+            if (letter.isEmpty() && anchor) {
+                displayedLetter = "◆";
+            } else {
+                displayedLetter = letter;
+            }
+            Label cell = createLetterTile(displayedLetter, style, size);
             Canvas grain = new Canvas(size, size);
             GraphicsContext ink = grain.getGraphicsContext2D();
             ink.setStroke(Color.web("#172f35", 0.25)); ink.setLineWidth(1);
@@ -371,13 +460,21 @@ public class PrimaryController {
             dictionaryLabel.setText("Voyage complete."); return;
         }
         for (char c : typedLetters) if (c == 0) {
-            dictionaryLabel.setText(settings.online() ? "Fill the raft tiles. Enter unlocks for a dictionary word."
-                : "Offline practice: fill every tile. No word lookup required."); return;
+            if (settings.online()) {
+                dictionaryLabel.setText("Fill the raft tiles. Enter unlocks for a dictionary word.");
+            } else {
+                dictionaryLabel.setText("Offline practice: fill every tile. No word lookup required.");
+            }
+            return;
         }
         String word = new String(typedLetters);
         if (!settings.online()) {
             wordValidationResult = dictionary.validateWord(word, false).join();
-            approvedTypedWord = wordValidationResult == DictionaryService.Result.VALID ? word : "";
+            if (wordValidationResult == DictionaryService.Result.VALID) {
+                approvedTypedWord = word;
+            } else {
+                approvedTypedWord = "";
+            }
             dictionaryLabel.setText("Offline practice · Ready to submit. Word validity is not checked.");
             updateEnterButtonState(); return;
         }
@@ -389,7 +486,11 @@ public class PrimaryController {
             pendingDictionaryRequest.whenComplete((result, error) -> Platform.runLater(() -> {
                 // Network results arrive later; apply only the current word's result.
                 if (version != lookupRequestVersion || !isTypingAllowed() || !word.equals(new String(typedLetters))) return;
-                wordValidationResult = error == null ? result : DictionaryService.Result.UNAVAILABLE;
+                if (error == null) {
+                    wordValidationResult = result;
+                } else {
+                    wordValidationResult = DictionaryService.Result.UNAVAILABLE;
+                }
                 if (wordValidationResult == DictionaryService.Result.VALID) {
                     approvedTypedWord = word;
                     dictionaryLabel.setText("Aye, that's a word! Press Enter to send it sailing.");
@@ -424,7 +525,13 @@ public class PrimaryController {
     @FXML private void showHint() {
         if (!isTypingAllowed()) return;
         soundManager.playSfx(SoundManager.Sfx.BUTTON_1);
-        showDialog("Captain's hint", "Word " + (game.isWorkingOnWordB() ? "B / DOWN" : "A / ACROSS")
+        String wordDirection;
+        if (game.isWorkingOnWordB()) {
+            wordDirection = "B / DOWN";
+        } else {
+            wordDirection = "A / ACROSS";
+        }
+        showDialog("Captain's hint", "Word " + wordDirection
             + " · " + typedLetters.length + " letters", PirateHints.forWord(game.currentAnswer())
             + "\n\nThis hint is free. No attempts or points lost!");
     }
@@ -438,9 +545,16 @@ public class PrimaryController {
     }
     /** down=false draws A across; down=true draws B vertically. */
     private void drawGuessHistoryForWord(boolean down) {
-        VBox box = down ? historyB : historyA;
+        VBox box;
+        int length;
+        if (down) {
+            box = historyB;
+            length = game.level().down().length();
+        } else {
+            box = historyA;
+            length = game.level().across().length();
+        }
         box.getChildren().clear();
-        int length = down ? game.level().down().length() : game.level().across().length();
         List<Guess> guesses = game.guessHistoryForWord(down);
         GridPane grid = new GridPane();
         grid.setHgap(3);
@@ -466,7 +580,11 @@ public class PrimaryController {
                     style = "correct";
                 }
                 Label cell = createLetterTile(value, style, 22);
-                grid.add(cell, down ? attempt : position, down ? position + 1 : attempt);
+                if (down) {
+                    grid.add(cell, attempt, position + 1);
+                } else {
+                    grid.add(cell, position, attempt);
+                }
             }
         }
         box.getChildren().add(grid);
@@ -487,7 +605,11 @@ public class PrimaryController {
     }
     private Button createKeyboardButton(String title, Runnable action) {
         Button b = new Button(title); b.getStyleClass().add("key"); b.setFocusTraversable(false);
-        b.setMinWidth(title.length() > 1 ? 60 : 39);
+        if (title.length() > 1) {
+            b.setMinWidth(60);
+        } else {
+            b.setMinWidth(39);
+        }
         b.setOnAction(event -> action.run()); inputButtons.add(b); return b;
     }
     private void refreshKeyboardColors() {
@@ -522,10 +644,28 @@ public class PrimaryController {
             case BOTH_SUNK: title="Lost to the deep."; detail="The anchor bought you another chance, but both words ran out of attempts."; break;
             default: title="The junction broke."; detail="Five misses on A without a green anchor tile caused an immediate sink.";
         }
-        resultTitle.setText(title); resultDetail.setText(detail + " Best (" + (usedOfflinePracticeThisRound ? "practice" : "dictionary") + "): "
-            + settings.bestScoreForLevel(levelIndex, usedOfflinePracticeThisRound) + "%." + (scoreSaved ? "" : " Could not save to disk.")); resultScore.setText(game.scorePercent() + "%");
+        String scoreMode;
+        if (usedOfflinePracticeThisRound) {
+            scoreMode = "practice";
+        } else {
+            scoreMode = "dictionary";
+        }
+        String saveMessage;
+        if (scoreSaved) {
+            saveMessage = "";
+        } else {
+            saveMessage = " Could not save to disk.";
+        }
+        resultTitle.setText(title);
+        resultDetail.setText(detail + " Best (" + scoreMode + "): "
+            + settings.bestScoreForLevel(levelIndex, usedOfflinePracticeThisRound) + "%." + saveMessage);
+        resultScore.setText(game.scorePercent() + "%");
         answersLabel.setText("A: " + game.level().across() + "     /     B: " + game.level().down());
-        nextButton.setText(levelIndex + 1 == Levels.ALL.size() ? "Back to home" : "Next level →");
+        if (levelIndex + 1 == Levels.ALL.size()) {
+            nextButton.setText("Back to home");
+        } else {
+            nextButton.setText("Next level →");
+        }
         showOnlyScreen(resultPane);
     }
     @FXML private void showHelp() {
@@ -563,8 +703,15 @@ public class PrimaryController {
         }
         OceanArt.log(g,ox+96,oy-48,44); OceanArt.log(g,ox+96,oy+48,44);
         g.setStroke(Color.web("#ffe4a0"));g.setLineWidth(3);g.strokeRect(ox+96,oy,44,44);
-        double drift=settings.motion() ? Math.rint(Math.sin(seaFrame*Math.PI/60)*13) : 0;
-        double bob=settings.motion() ? Math.rint(Math.sin(seaFrame*Math.PI/12)*2) : 0;
+        double drift;
+        double bob;
+        if (settings.motion()) {
+            drift = Math.rint(Math.sin(seaFrame*Math.PI/60)*13);
+            bob = Math.rint(Math.sin(seaFrame*Math.PI/12)*2);
+        } else {
+            drift = 0;
+            bob = 0;
+        }
         OceanArt.wake(g,w*.23+drift-5,250+bob,seaFrame);
         OceanArt.shark(g,w*.23+drift,228+bob,1.2,seaFrame);
         OceanArt.wake(g,w*.72-drift-5,225-bob,seaFrame+6);
@@ -577,7 +724,12 @@ public class PrimaryController {
         GraphicsContext g=waterCanvas.getGraphicsContext2D();OceanArt.sea(g,w,h,seaFrame/4);
         OceanArt.island(g,15,h*.4,0.65);
         OceanArt.compass(g,w-45,42);
-        double drift=settings.motion() ? Math.rint(Math.sin(seaFrame*Math.PI/60)*10) : 0;
+        double drift;
+        if (settings.motion()) {
+            drift = Math.rint(Math.sin(seaFrame*Math.PI/60)*10);
+        } else {
+            drift = 0;
+        }
         OceanArt.wake(g,w-131+drift,h-23,seaFrame);
         OceanArt.shark(g,w-126+drift,h-46,0.8,seaFrame);
     }
@@ -632,15 +784,35 @@ public class PrimaryController {
         g.setFont(javafx.scene.text.Font.font("Segoe UI", 13));
         for (int row=0;row<2;row++) {
             boolean down = row==1; double y = 1+row*29;
-            g.setFill(Color.web("#d2e8ee")); g.fillText((down?"B":"A") + " · " + statusTextForWord(down),12,y+16);
+            String wordName;
+            if (down) {
+                wordName = "B";
+            } else {
+                wordName = "A";
+            }
+            g.setFill(Color.web("#d2e8ee")); g.fillText(wordName + " · " + statusTextForWord(down),12,y+16);
             double start = 180, end = w-48;
             for (int i=0;i<=5;i++) { g.setFill(Color.web("#426b7a")); g.fillRect(Math.rint(start+(end-start)*i/5),y+25,3,3); }
             boolean sunk = game.wrongGuessCountForWord(down)==5 || game.outcome()==Outcome.IMMEDIATE_SINK;
-            g.setFill(Color.web(sunk?"#50606b":"#bd8a59")); g.fillRect(w-40,y+8,28,19);
+            String raftColor;
+            if (sunk) {
+                raftColor = "#50606b";
+            } else {
+                raftColor = "#bd8a59";
+            }
+            g.setFill(Color.web(raftColor)); g.fillRect(w-40,y+8,28,19);
             g.setStroke(Color.web("#f0cf8c"));g.strokeLine(w-36,y+12,w-16,y+12);
             if (game.isWordSolved(down)) {
                 g.setFill(Color.web("#7edbb5")); g.fillText("SAFE",start,y+18);
-            } else drawSharkFin(g,start+(end-start)*(down ? threatB.get() : threatA.get())/5-10,y+3);
+            } else {
+                double threatPosition;
+                if (down) {
+                    threatPosition = threatB.get();
+                } else {
+                    threatPosition = threatA.get();
+                }
+                drawSharkFin(g,start+(end-start)*threatPosition/5-10,y+3);
+            }
         }
     }
 }

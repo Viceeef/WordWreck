@@ -94,7 +94,12 @@ public final class SoundManager {
     }
 
     public void playGameMusic() {
-        MusicTrack track = (gameMusicToggle++ % 2 == 0) ? MusicTrack.GAME_1 : MusicTrack.GAME_2;
+        MusicTrack track;
+        if (gameMusicToggle++ % 2 == 0) {
+            track = MusicTrack.GAME_1;
+        } else {
+            track = MusicTrack.GAME_2;
+        }
         playMusic(track);
     }
 

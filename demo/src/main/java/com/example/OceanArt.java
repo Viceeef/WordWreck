@@ -78,8 +78,13 @@ public final class OceanArt {
             frame=new String[SHARK.length];
             for(int row=0;row<SHARK.length;row++) {
                 StringBuilder line=new StringBuilder(SHARK[row]);
-                for(int col=0;col<8;col++)
-                    line.setCharAt(col,row>0 ? SHARK[row-1].charAt(col) : '.');
+                for(int col=0;col<8;col++) {
+                    if (row > 0) {
+                        line.setCharAt(col, SHARK[row-1].charAt(col));
+                    } else {
+                        line.setCharAt(col, '.');
+                    }
+                }
                 frame[row]=line.toString();
             }
         }

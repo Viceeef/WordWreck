@@ -43,6 +43,10 @@ public final class GameSettings {
         catch (BackingStoreException ex) { return false; }
     }
     private String scorePreferenceKey(int level, boolean practice) {
-        return (practice ? "practice." : "dictionary.") + level;
+        if (practice) {
+            return "practice." + level;
+        } else {
+            return "dictionary." + level;
+        }
     }
 }
