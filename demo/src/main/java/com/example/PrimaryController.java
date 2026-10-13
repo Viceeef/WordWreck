@@ -217,7 +217,9 @@ public class PrimaryController {
     }
     private boolean isTypingAllowed() { return game != null && gamePane.isVisible() && game.outcome() == Outcome.PLAYING; }
     /** When playing B, its shared crossing letter is already filled and cannot be edited. */
-    private boolean isLockedAnchorPosition(int index) { return game.isWorkingOnWordB() && index == game.level().anchorB(); }
+    private boolean isLockedAnchorPosition(int index) { 
+        return game.isWorkingOnWordB() && index == game.level().anchorB(); 
+    }
     private void resetTypedLettersForCurrentWord() {
         typedLetters = new char[game.currentAnswer().length()];
         if (game.isWorkingOnWordB()) typedLetters[game.level().anchorB()] = game.level().down().charAt(game.level().anchorB());
